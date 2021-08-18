@@ -42,6 +42,7 @@ internal void RenderWeirdGradient(int xOffset, int yOffset)
             uint8 red = (uint8)(x + xOffset);
             uint8 green = (uint8)(y + yOffset);
             uint8 blue = (uint8)yOffset;
+            blue = 0;
 
             *pixel = (red << 16) | (green << 8) | (blue << 0);
         }
@@ -89,6 +90,7 @@ internal void Win32UpdateWindow(HDC deviceContext, RECT* windowRect)
         SRCCOPY
         );
 }
+
 
 LRESULT MainWindowCallback( 
     HWND window, 
@@ -141,7 +143,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
     //TODO(dechichi): Chekc if CS_OWNDC, CS_HREDRAW, CS_VREDRAW stil matter
     windowClass.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
-    windowClass.lpfnWndProc = MainWindowCallback;
+    windowClass.lpfnWndProc = (WNDPROC) MainWindowCallback;
     windowClass.hInstance = instance;
     //windowClass.hIcon;
     windowClass.lpszClassName = "HandmadeHeroWindow";

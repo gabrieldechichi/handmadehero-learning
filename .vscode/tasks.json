@@ -6,7 +6,7 @@
         {
             "label": "Build",
             "type": "shell",
-            "command": "${workspaceFolder}/code/build.bat",
+            "command": "${workspaceFolder}/code/build.ps1",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
