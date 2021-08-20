@@ -102,7 +102,7 @@ internal void Win32VibrateController(int controllerIndex, WORD leftVibration, WO
 }
 
 internal void Win32GamepadHandleInput(int* xOffset, int* yOffset) 
-{	
+{
     for (int controllerIndex = 0; controllerIndex < XUSER_MAX_COUNT; controllerIndex++)
     {
         XINPUT_STATE controllerState;

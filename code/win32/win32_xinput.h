@@ -11,7 +11,7 @@
 typedef XINPUT_GET_STATE(x_input_get_state);
 XINPUT_GET_STATE(XInputGetStateStub)
 {
-    return 0;
+    return ERROR_DEVICE_NOT_CONNECTED;
 }
 global_variable x_input_get_state *XInputGetState_ = XInputGetStateStub;
 #define XInputGetState XInputGetState_
@@ -20,7 +20,7 @@ global_variable x_input_get_state *XInputGetState_ = XInputGetStateStub;
 typedef XINPUT_SET_STATE(x_input_set_state);
 XINPUT_SET_STATE(XInputSetStateStub)
 {
-    return 0;
+    return ERROR_DEVICE_NOT_CONNECTED;
 }
 global_variable x_input_set_state* XInputSetState_ = XInputSetStateStub;
 #define XInputSetState XInputSetState_
