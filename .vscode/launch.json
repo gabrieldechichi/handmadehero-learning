@@ -14,7 +14,8 @@
             "cwd": "${workspaceFolder}/data",
             "environment": [],
             "console": "integratedTerminal",            
-            "preLaunchTask": "Build",
+            //In case you want to build an debug
+            // "preLaunchTask": "Build",
         }
     ]
 }

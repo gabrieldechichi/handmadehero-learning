@@ -1,19 +1,6 @@
 #include <Windows.h>
-#include <stdint.h>
-
-#define local_persist static
-#define global_variable static
-#define internal static
-
-typedef int8_t  int8;
-typedef int16_t int16;
-typedef int32_t int32;
-typedef int64_t int64;
-
-typedef uint8_t uint8;
-typedef uint16_t uint16;
-typedef uint32_t uint32;
-typedef uint64_t uint64;
+#include "defines.h"
+#include "win32_xinput.h"
 
 struct win32_offscreen_buffer
 {	
@@ -108,6 +95,110 @@ internal void Win32CopyBufferToWindow(win32_offscreen_buffer buffer, HDC deviceC
         );
 }
 
+internal void Win32VibrateController(int controllerIndex, WORD leftVibration, WORD rightVibration)
+{
+    XINPUT_VIBRATION vibration;
+    vibration.wLeftMotorSpeed = leftVibration;
+    vibration.wRightMotorSpeed = rightVibration;
+    XInputSetState(controllerIndex, &vibration);
+}
+
+internal void Win32GamepadHandleInput(int* xOffset, int* yOffset) 
+{	
+    for (int controllerIndex = 0; controllerIndex < XUSER_MAX_COUNT; controllerIndex++)
+    {
+        XINPUT_STATE controllerState;
+        if (XInputGetState(controllerIndex, &controllerState) == ERROR_SUCCESS)
+        {
+            XINPUT_GAMEPAD *pad = &controllerState.Gamepad;
+
+            bool up = pad->wButtons & XINPUT_GAMEPAD_DPAD_UP;
+            bool down = pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN;
+            bool left = pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT;
+            bool right = pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT;
+
+            bool start = pad->wButtons & XINPUT_GAMEPAD_START;
+            bool back = pad->wButtons & XINPUT_GAMEPAD_BACK;
+            bool leftShoulder = pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER;
+            bool rightShoulder = pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER;
+
+            bool aButton = pad->wButtons & XINPUT_GAMEPAD_A;
+            bool bButton = pad->wButtons & XINPUT_GAMEPAD_B;
+            bool xButton = pad->wButtons & XINPUT_GAMEPAD_X;
+            bool yButton = pad->wButtons & XINPUT_GAMEPAD_Y;
+
+            int16 stickX = pad->sThumbLX;
+            int16 stickY = pad->sThumbLY;
+
+            if (aButton)
+            {
+                (*yOffset)++;
+                Win32VibrateController(controllerIndex, 32000, 32000);
+            }
+            else 
+            {	
+                Win32VibrateController(controllerIndex, 0, 0);
+            }
+        }
+    }
+    
+}
+
+internal void Win32HandleKeyboardInput(WPARAM wParam, LPARAM lParam)
+{
+    uint32 vkCode = wParam;
+    bool wasDown = ((1 << 30) & lParam) != 0;
+    bool isDown = ((1 << 31) & lParam) == 0;
+
+    if (wasDown != isDown) 
+    {	
+        switch (vkCode)
+        {
+        case 'W':
+        case VK_UP:
+            OutputDebugString("W");
+            if (!wasDown) 
+            {	
+                OutputDebugString("W Pressed");
+            }
+            else if (wasDown && !isDown)
+            {
+                OutputDebugString("W Released");
+            }
+            break;
+        case 'A':
+        case VK_LEFT:
+            OutputDebugString("A");
+            break;
+        case 'S':
+        case VK_DOWN:
+            OutputDebugString("S");
+            break;
+        case 'D':
+        case VK_RIGHT:
+            OutputDebugString("D");
+            break;
+        case 'Q':
+            OutputDebugString("Q");
+            break;
+        case 'E':
+            OutputDebugString("E");
+            break;
+        
+        case VK_ESCAPE:
+            OutputDebugString("Escape");
+            break;
+        
+        case VK_SPACE:
+            OutputDebugString("Space");
+            break;
+        
+
+        default:
+            break;
+        }
+    }
+}
 
 LRESULT MainWindowCallback( 
     HWND window, 
@@ -132,6 +223,12 @@ LRESULT MainWindowCallback(
     case WM_ACTIVATEAPP:
         OutputDebugString("Activate");
         break;
+    case WM_SYSKEYDOWN:
+    case WM_SYSKEYUP:
+    case WM_KEYDOWN:
+    case WM_KEYUP:
+        Win32HandleKeyboardInput(wParam, lParam);
+        break;
     case WM_PAINT:
         {
             PAINTSTRUCT paint;
@@ -151,7 +248,13 @@ LRESULT MainWindowCallback(
 
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int showCode)
 {
-     WNDCLASS windowClass = {};
+    //Initialize backbuffer
+    globalBackBuffer = Win32ResizeDIBSection(globalBackBuffer, 1280, 720);   
+
+    //Initialize XInput
+    Win32LoadXInput();
+
+    WNDCLASS windowClass = {};
 
     //HREDRAW and VREDRAW makes sure how window is repainted if it gets scaled
     windowClass.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
@@ -179,7 +282,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         if (wHandle) 
         {
             //
-            globalBackBuffer = Win32ResizeDIBSection(globalBackBuffer, 1280, 720);   
             //
 
             MSG message;
@@ -194,8 +296,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
                     TranslateMessage(&message);
                     DispatchMessage(&message);
                 }
+
                 ++xOffset;
-                ++yOffset;
+                Win32GamepadHandleInput(&xOffset, &yOffset);
+                
                 RenderWeirdGradient(globalBackBuffer, xOffset, yOffset);
 
 
