@@ -11,7 +11,12 @@
             "group": {
                 "kind": "build",
                 "isDefault": true
-            }
+            },
+            "options": {
+				"shell": {
+					"args": [ "-NoProfile" ]
+				}
+			}
         }
     ]
 }

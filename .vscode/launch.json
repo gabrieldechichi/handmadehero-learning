@@ -9,11 +9,11 @@
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/win32_handmade.exe",
-            "args": [],
+            "args": ["-NoProfile"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/data",
             "environment": [],
-            "console": "integratedTerminal",
+            "console": "integratedTerminal",            
             "preLaunchTask": "Build",
         }
     ]
