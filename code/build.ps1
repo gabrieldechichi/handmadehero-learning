@@ -7,5 +7,5 @@ if (!(Test-Path $build_path)) {
 }
 
 pushd $build_path
-cl -Zi '../code/win32_handmade.cpp' user32.lib Gdi32.lib
+cl -FC -Zi '../code/win32_handmade.cpp' user32.lib Gdi32.lib
 popd
