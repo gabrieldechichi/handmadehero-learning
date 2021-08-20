@@ -30,13 +30,13 @@ internal win32_window_size Win32GetWindowSize(HWND window)
     return size;
 }
 
-internal void RenderWeirdGradient(win32_offscreen_buffer bitmap, int xOffset, int yOffset)
+internal void RenderWeirdGradient(win32_offscreen_buffer* bitmap, int xOffset, int yOffset)
 {	
-    for (int y = 0; y < bitmap.bitmapHeight; y++)
+    for (int y = 0; y < bitmap->bitmapHeight; y++)
     {
-        for (int x = 0; x < bitmap.bitmapWidth; x++)
+        for (int x = 0; x < bitmap->bitmapWidth; x++)
         {
-            uint32* pixel = ((uint32*)bitmap.bitmapBuffer) + y*bitmap.bitmapWidth + x;
+            uint32* pixel = ((uint32*)bitmap->bitmapBuffer) + y*bitmap->bitmapWidth + x;
             //mem layour: b g r x (little endian architecture)
             //register layout: xx rr gg bb 
 
@@ -50,46 +50,44 @@ internal void RenderWeirdGradient(win32_offscreen_buffer bitmap, int xOffset, in
     }
 }
 
-internal win32_offscreen_buffer Win32ResizeDIBSection(win32_offscreen_buffer buffer, int width, int height)
+internal void Win32ResizeDIBSection(win32_offscreen_buffer* buffer, int width, int height)
 {
-    if (buffer.bitmapBuffer) 
+    if (buffer->bitmapBuffer) 
     {
-        VirtualFree(buffer.bitmapBuffer, 0, MEM_RELEASE);
+        VirtualFree(buffer->bitmapBuffer, 0, MEM_RELEASE);
     }
 
-    buffer.bitmapWidth = width;
-    buffer.bitmapHeight = height;
-    buffer.bytesPerPixel = 4;
+    buffer->bitmapWidth = width;
+    buffer->bitmapHeight = height;
+    buffer->bytesPerPixel = 4;
 
     ///Create bitmpa info
-    buffer.bitmapInfo.bmiHeader.biSize = sizeof(buffer.bitmapInfo.bmiHeader);
-    buffer.bitmapInfo.bmiHeader.biWidth = buffer.bitmapWidth;
-    buffer.bitmapInfo.bmiHeader.biHeight = -buffer.bitmapHeight;
+    buffer->bitmapInfo.bmiHeader.biSize = sizeof(buffer->bitmapInfo.bmiHeader);
+    buffer->bitmapInfo.bmiHeader.biWidth = buffer->bitmapWidth;
+    buffer->bitmapInfo.bmiHeader.biHeight = -buffer->bitmapHeight;
 
-    buffer.bitmapInfo.bmiHeader.biPlanes = 1;
-    buffer.bitmapInfo.bmiHeader.biBitCount = 32;
-    buffer.bitmapInfo.bmiHeader.biCompression = BI_RGB;
+    buffer->bitmapInfo.bmiHeader.biPlanes = 1;
+    buffer->bitmapInfo.bmiHeader.biBitCount = 32;
+    buffer->bitmapInfo.bmiHeader.biCompression = BI_RGB;
     ///
 
-    int bufferSize = buffer.bytesPerPixel * buffer.bitmapWidth * buffer.bitmapHeight;
-    buffer.bitmapBuffer = VirtualAlloc(0, bufferSize, MEM_COMMIT, PAGE_READWRITE);
-
-    return buffer;
+    int bufferSize = buffer->bytesPerPixel * buffer->bitmapWidth * buffer->bitmapHeight;
+    buffer->bitmapBuffer = VirtualAlloc(0, bufferSize, MEM_COMMIT, PAGE_READWRITE);
 }
 
 /*
 avoid passing pointers to things on the stack because this 
 makes it harder for the compile to optimize (inline or assume not pointer aliasing)
 */
-internal void Win32CopyBufferToWindow(win32_offscreen_buffer buffer, HDC deviceContext, int windowWidth, int windowHeight)
+internal void Win32CopyBufferToWindow(win32_offscreen_buffer* buffer, HDC deviceContext, int windowWidth, int windowHeight)
 {
     //todo(gabriel): aspect ratio
     StretchDIBits(
         deviceContext,
         0,0, windowWidth, windowHeight,
-        0,0, buffer.bitmapWidth, buffer.bitmapHeight,
-        buffer.bitmapBuffer,
-        &buffer.bitmapInfo,
+        0,0, buffer->bitmapWidth, buffer->bitmapHeight,
+        buffer->bitmapBuffer,
+        &buffer->bitmapInfo,
         DIB_RGB_COLORS,
         SRCCOPY
         );
@@ -234,7 +232,7 @@ LRESULT MainWindowCallback(
             PAINTSTRUCT paint;
             HDC deviceContext = BeginPaint(window, &paint);
             auto windowSize = Win32GetWindowSize(window);
-            Win32CopyBufferToWindow(globalBackBuffer, deviceContext, windowSize.width, windowSize.height);
+            Win32CopyBufferToWindow(&globalBackBuffer, deviceContext, windowSize.width, windowSize.height);
             EndPaint(window, &paint); 	
         }
         break;
@@ -249,7 +247,7 @@ LRESULT MainWindowCallback(
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int showCode)
 {
     //Initialize backbuffer
-    globalBackBuffer = Win32ResizeDIBSection(globalBackBuffer, 1280, 720);   
+    Win32ResizeDIBSection(&globalBackBuffer, 1280, 720);   
 
     //Initialize XInput
     Win32LoadXInput();
@@ -300,13 +298,13 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
                 ++xOffset;
                 Win32GamepadHandleInput(&xOffset, &yOffset);
                 
-                RenderWeirdGradient(globalBackBuffer, xOffset, yOffset);
+                RenderWeirdGradient(&globalBackBuffer, xOffset, yOffset);
 
 
                 {
                     HDC deviceContext = GetDC(wHandle);
                     auto windowSize = Win32GetWindowSize(wHandle);
-                    Win32CopyBufferToWindow(globalBackBuffer, deviceContext, windowSize.width, windowSize.height);
+                    Win32CopyBufferToWindow(&globalBackBuffer, deviceContext, windowSize.width, windowSize.height);
                     ReleaseDC(wHandle, deviceContext);	
                 }
             }
