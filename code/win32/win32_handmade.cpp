@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include "defines.h"
 #include "win32_xinput.h"
+#include "win32_dsound.h"
 
 struct win32_offscreen_buffer
 {	
@@ -279,9 +280,11 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
         if (wHandle) 
         {
-            //
-            //
+            const int32 samplesPerSecond = 48000;
+            Win32InitDSound(wHandle, samplesPerSecond, samplesPerSecond * sizeof(int16) * 2);
 
+            //Since we specify CS_OWNDC we can use this device context forever
+            HDC deviceContext = GetDC(wHandle);
             MSG message;
             globalIsRunning = true;
 
@@ -302,7 +305,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
 
                 {
-                    HDC deviceContext = GetDC(wHandle);
                     auto windowSize = Win32GetWindowSize(wHandle);
                     Win32CopyBufferToWindow(&globalBackBuffer, deviceContext, windowSize.width, windowSize.height);
                     ReleaseDC(wHandle, deviceContext);	
