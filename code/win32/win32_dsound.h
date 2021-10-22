@@ -1,6 +1,7 @@
 #include "defines.h"
 #include <Windows.h>
 #include <dsound.h>
+#include <math.h>
 
 #define DIRECT_SOUND_CREATE(name) HRESULT WINAPI name(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS, LPUNKNOWN pUnkOuter)
 typedef DIRECT_SOUND_CREATE(direct_sound_create);
@@ -108,6 +109,21 @@ internal void Win32WriteSquareWave(win32_audio_player *player, DWORD regionSize,
     }
 }
 
+internal void Win32WriteSineWave(win32_audio_player *player, DWORD regionSize, void *regionStart)
+{
+    DWORD regionSampleCount = regionSize / player->bytesPerSample;
+    int16 *sampleStart = (int16 *)regionStart;
+    for (int i = 0; i < regionSampleCount; i++)
+    {
+        real32 t = 2.0f * Pi32 * ((real32)player->runningSampleIndex / (real32)player->period);
+        int16 sampleValue = player->toneVolume * sinf(t);
+
+        *sampleStart++ = sampleValue;
+        *sampleStart++ = sampleValue;
+        ++player->runningSampleIndex;
+    }
+}
+
 internal void Win32PlaySound(win32_audio_player *player)
 {
     DWORD playCursor;
@@ -115,10 +131,10 @@ internal void Win32PlaySound(win32_audio_player *player)
     if (SUCCEEDED(globalSecondaryBuffer->GetCurrentPosition(&playCursor, &writeCursor)))
     {
         DWORD startLockByte = (player->runningSampleIndex * player->bytesPerSample) % player->bufferSize;
-        DWORD bytesToLock;
+        DWORD bytesToLock = 0;
         if (startLockByte == playCursor)
         {
-            bytesToLock = player->bufferSize;
+            bytesToLock = 0;
         }
         else if (startLockByte > playCursor)
         {
@@ -141,8 +157,9 @@ internal void Win32PlaySound(win32_audio_player *player)
                 &region2, &region2Size,
                 0)))
         {
-            Win32WriteSquareWave(player, region1Size, region1);
-            Win32WriteSquareWave(player, region2Size, region2);
+
+            Win32WriteSineWave(player, region1Size, region1);
+            Win32WriteSineWave(player, region2Size, region2);
             globalSecondaryBuffer->Unlock(region1, region1Size, region2, region2Size);
         }
 
